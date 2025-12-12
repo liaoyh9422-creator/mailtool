@@ -50,7 +50,6 @@ const INITIAL_REWARD_DATA: RewardCategory[] = [
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [CommonModule],
 })
 export class AppComponent {
