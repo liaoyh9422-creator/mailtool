@@ -1,0 +1,36 @@
+/* All styling is done via Tailwind CSS in the HTML template. */
+/* Custom animations are defined here for enhanced UI feedback. */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.item-enter {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes toast-in-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  15%, 85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+}
+
+.toast-enter-leave {
+    animation: toast-in-out 3s ease-in-out forwards;
+}

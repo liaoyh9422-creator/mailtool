@@ -1,0 +1,219 @@
+<main class="h-screen bg-slate-900 text-gray-200 font-sans overflow-hidden">
+  <div class="flex flex-col gap-4 p-4 h-full">
+
+    <!-- Top Row -->
+    <div class="flex flex-row gap-4 h-2/5">
+      <!-- Top-Left Column: Controls Panel -->
+      <div class="bg-slate-800 p-3 rounded-2xl shadow-lg border border-slate-700 flex flex-col basis-4/12 h-full">
+        <h2 class="text-xl font-semibold mb-3 border-b border-slate-600 pb-2 text-cyan-400 flex-shrink-0">
+          配置选项
+        </h2>
+        
+        <!-- Scrollable area for controls -->
+        <div class="flex-grow overflow-y-auto pr-2 -mr-2 space-y-3">
+          <!-- Quantity Input -->
+          <div>
+            <label for="count" class="block text-xs font-medium text-slate-300 mb-1">物品数量 (Count)</label>
+            <input
+              id="count"
+              type="number"
+              [value]="quantityInput()"
+              (input)="onQuantityChange($event)"
+              class="w-full bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+              [class.border-red-500]="!!quantityError()"
+              [class.focus:border-red-500]="!!quantityError()"
+              [class.focus:ring-red-500]="!!quantityError()"
+            />
+            @if (quantityError(); as error) {
+              <p class="mt-1 text-xs text-red-400">{{ error }}</p>
+            }
+          </div>
+
+          <!-- Reward Type Dropdown -->
+          <div>
+            <label for="rewardType" class="block text-xs font-medium text-slate-300 mb-1">奖励类型 (Reward Type)</label>
+            <select
+              id="rewardType"
+              [value]="selectedRewardType()"
+              (change)="onTypeChange($event)"
+              class="w-full bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+            >
+              @for (category of rewardData(); track category.type) {
+                <option [value]="category.type">{{ category.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Item Search Input -->
+          @if (selectedCategory()) {
+            <div>
+              <label for="item-search" class="block text-xs font-medium text-slate-300 mb-1">物品ID/名称 (Num/Name)</label>
+              <input
+                id="item-search"
+                type="text"
+                placeholder="按名称或ID搜索..."
+                [value]="searchTerm()"
+                (input)="onSearchTermChange($event)"
+                class="w-full bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+              />
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Top-Right Column: Item List Panel -->
+      <div class="bg-slate-800 p-3 rounded-2xl shadow-lg border border-slate-700 flex flex-col basis-8/12 h-full">
+        <h2 class="text-xl font-semibold mb-3 border-b border-slate-600 pb-2 text-cyan-400 flex-shrink-0">
+          物品列表
+        </h2>
+        
+        @if (selectedCategory(); as category) {
+          <div class="flex-grow overflow-y-auto bg-slate-900/50 p-2 rounded-lg border border-slate-700 space-y-1">
+            @for (item of filteredItems(); track item.id) {
+              <div 
+                class="flex items-center transition-opacity duration-200"
+                [class.opacity-50]="!category.allowMultiple && selectedItems().size > 0 && !selectedItems().has(item.id)">
+                <input
+                  #inputElement
+                  [id]="'item-' + category.type + '-' + item.id"
+                  [type]="category.allowMultiple ? 'checkbox' : 'radio'"
+                  [name]="'item-selection-' + category.type"
+                  [checked]="selectedItems().has(item.id)"
+                  (change)="onItemSelect(item.id, inputElement.checked)"
+                  class="h-4 w-4 rounded bg-slate-700 border-slate-500 text-cyan-500 focus:ring-cyan-600"
+                />
+                <label [for]="'item-' + category.type + '-' + item.id" class="ml-2 text-sm text-slate-300">
+                  {{ item.name }} <span class="text-slate-500 text-xs">(ID: {{ item.id }})</span>
+                </label>
+              </div>
+            }
+            @if (filteredItems().length === 0) {
+              <p class="text-slate-500 text-center text-sm py-3">未找到物品</p>
+            }
+          </div>
+        } @else {
+          <div class="flex-grow flex items-center justify-center bg-slate-900/50 rounded-lg border border-slate-700">
+            <p class="text-slate-500 text-sm p-4 text-center">选择奖励类型以查看物品</p>
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Bottom Row: Output Panel -->
+    <div class="bg-slate-800/50 p-3 rounded-2xl shadow-lg border border-slate-700 flex flex-col h-3/5">
+      <div class="flex justify-between items-center mb-3 border-b border-slate-600 pb-2 flex-shrink-0">
+          <h2 class="text-xl font-semibold text-cyan-400">
+              输出结果
+          </h2>
+          <button
+              (click)="clearOutput()"
+              [disabled]="generatedOutputs().length === 0"
+              class="px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white text-xs font-semibold rounded-md disabled:bg-slate-600 disabled:cursor-not-allowed transition"
+          >
+              清空
+          </button>
+      </div>
+      
+      <!-- Generation Actions -->
+      <div class="pb-3 mb-3 border-b border-slate-700 flex flex-row gap-6 items-start flex-shrink-0">
+        <!-- Manual Selection Action -->
+        <div class="flex-1">
+          <h3 class="text-base font-medium text-slate-300 mb-2">从上方列表生成</h3>
+          <button
+            (click)="handleGenerate()"
+            [disabled]="isLoading() || selectedItems().size === 0 || !!quantityError()"
+            class="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-md shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 ease-in-out"
+          >
+            @if (isLoading()) {
+              <span class="flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                生成中...
+              </span>
+            } @else {
+              <span class="text-sm">生成加密数据</span>
+            }
+          </button>
+        </div>
+
+        <!-- Bulk Generation Actions -->
+        <div class="flex-1">
+          <h3 class="text-base font-medium text-slate-300 mb-2">批量生成</h3>
+          <div class="space-y-3">
+            <!-- Specific quantity for common items -->
+             <div>
+              <label for="common-count" class="block text-xs font-medium text-slate-300 mb-1">常用(全图鉴) 数量 (6-25)</label>
+              <input
+                id="common-count"
+                type="number"
+                [value]="commonQuantityInput()"
+                (input)="onCommonQuantityChange($event)"
+                class="w-full bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                [class.border-red-500]="!!commonQuantityError()"
+                [class.focus:border-red-500]="!!commonQuantityError()"
+                [class.focus:ring-red-500]="!!commonQuantityError()"
+              />
+              @if (commonQuantityError(); as error) {
+                <p class="mt-1 text-xs text-red-400">{{ error }}</p>
+              }
+            </div>
+
+            <!-- One-Key Add Buttons -->
+            <div class="grid grid-cols-2 gap-2">
+              <button 
+                (click)="oneKeyAdd(0)" 
+                [disabled]="isLoading() || !!quantityError()"
+                class="w-full text-center px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-md shadow-md transition-transform transform hover:scale-105 duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                一键添加普通物品
+              </button>
+              <button 
+                (click)="oneKeyAdd(1)" 
+                [disabled]="isLoading() || !!quantityError()"
+                class="w-full text-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-md shadow-md transition-transform transform hover:scale-105 duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                一键添加特殊道具
+              </button>
+              <button 
+                (click)="oneKeyAdd(3)" 
+                [disabled]="isLoading() || !!commonQuantityError()"
+                class="col-span-2 w-full text-center px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold rounded-md shadow-md transition-transform transform hover:scale-105 duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                一键添加常用(全图鉴)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-grow overflow-y-auto space-y-2 pr-2 -mr-2">
+          @if (generatedOutputs().length === 0) {
+              <div class="flex items-center justify-center h-full text-slate-500">
+                  <p class="text-sm">生成的加密 JSON 将显示在这里</p>
+              </div>
+          } @else {
+            @for (output of generatedOutputs(); track output.id) {
+              <div 
+                class="bg-slate-900 rounded-lg p-2 border border-slate-700 relative group item-enter"
+                title="AES-128-ECB encrypted reward data."
+              >
+                  <div class="flex justify-between items-start mb-1">
+                    <p class="text-sm font-medium text-cyan-300 truncate pr-16">{{ output.itemName }}</p>
+                    <span class="text-xs text-slate-500 flex-shrink-0">ID: {{ output.id }}</span>
+                  </div>
+                  <pre class="text-xs text-slate-300 bg-black/30 p-1.5 rounded-md overflow-x-auto"><code>{{ output.text }}</code></pre>
+                  <button (click)="copyToClipboard(output)" class="absolute top-1.5 right-1.5 px-2 py-0.5 bg-slate-700 hover:bg-cyan-600 text-white text-xs font-semibold rounded-md transition opacity-0 group-hover:opacity-100">
+                    {{ output.copied ? '已复制!' : '复制' }}
+                  </button>
+              </div>
+            }
+          }
+      </div>
+    </div>
+  </div>
+
+  @if (toastMessage(); as message) {
+    <div class="toast-enter-leave fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white py-2 px-4 rounded-full shadow-lg text-sm font-semibold z-50">
+      {{ message }}
+    </div>
+  }
+</main>

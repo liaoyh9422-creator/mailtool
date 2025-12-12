@@ -1,0 +1,5 @@
+{
+  "name": "Game Reward Encryptor",
+  "description": "An application to generate and encrypt in-game reward data based on specified item types, quantities, and encryption rules (AES-128-ECB with PKCS7 padding).",
+  "requestFramePermissions": []
+}
