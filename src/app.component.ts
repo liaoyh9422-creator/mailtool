@@ -47,6 +47,7 @@ const INITIAL_REWARD_DATA: RewardCategory[] = [
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
