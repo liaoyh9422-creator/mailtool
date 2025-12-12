@@ -1,8 +1,5 @@
 import { Injectable } from '@angular/core';
-
-// This tells TypeScript that CryptoJS is a global variable
-// provided by the script in index.html
-declare const CryptoJS: any;
+import * as CryptoJS from 'crypto-js';
 
 @Injectable({
   providedIn: 'root',
